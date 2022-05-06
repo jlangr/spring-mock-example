@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: evintel-preferred-charge-times-listener
+  main:
+    allow-bean-definition-overriding: true
+## Logging
+logging:
+  level:
+    org.slf4j.Logger: INFO
+    org.apache.kafka: ERROR
+    com:
+      ford:
+        ev:
+          kafkastream:
+            eventrouter: ERROR
+reverse-geocoder:
+  baseUrl: https://reverse.geocoder.api.here.com/6.2/reversegeocode.json
+  appCode: -hLo5S8Ig4zbI77R4lVOFQ
+  appId: bA2YAXVvGfMuD2dRJPb9
+  gen: 9
+  onPrem: false

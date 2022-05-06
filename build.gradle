@@ -1,0 +1,164 @@
+buildscript {
+    ext {
+        springBootVersion = '2.3.9.RELEASE'
+        sonarqubeVersion = '2.7'
+        nexusRelease = "https://www.nexus.ford.com/repository/sc_edison_private_release_repository/"
+        nexusEnvironment = System.properties['NEXUS_ENV']
+        nexusUser = System.properties['NEXUS_USER']
+        nexusPassword = System.properties['NEXUS_PASSWORD']
+    }
+    repositories {
+        maven {
+            url "https://www.nexus.ford.com/repository/external-proxy-group/"
+        }
+        maven {
+            url "https://www.nexus.ford.com/content/groups/public/"
+        }
+        maven {
+            url "${nexusRelease}"
+            credentials {
+                username = "${nexusUser}"
+                password = "${nexusPassword}"
+            }
+        }       
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:${sonarqubeVersion}")
+    }
+}
+
+apply plugin: 'org.springframework.boot'
+apply plugin:'io.spring.dependency-management'
+apply plugin: 'java'
+apply plugin: 'org.sonarqube'
+apply plugin: 'jacoco'
+
+group = 'com.ford.ev'
+version = '1.0.0'
+sourceCompatibility = JavaVersion.VERSION_11
+targetCompatibility = JavaVersion.VERSION_11
+
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+    maven {
+        url "https://www.nexus.ford.com/repository/external-proxy-group/"
+    }
+    maven {
+        url "https://www.nexus.ford.com/content/groups/public/"
+    }
+    maven {
+        url "${nexusRelease}"
+        credentials {
+            username = "${nexusUser}"
+            password = "${nexusPassword}"
+        }
+    }
+    mavenCentral()
+}
+
+
+ext {    
+	set('springCloudServicesVersion', "2.3.0.RELEASE")
+	set('springCloudVersion', "Hoxton.SR10")
+	set("springDocVersion","1.5.4")
+	set('logstashVersion', '6.6')
+	set('logbackVersion', "1.2.3")
+    set('mapStructVersion', "1.4.2.Final")
+    set('geocoderSdkVersion', '1.0.4')
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.6"
+}
+
+sonarqube {
+    properties {
+        property "sonar.projectName", "EVINTEL Preferred Charge Times Listener"
+        property "sonar.projectKey", "com.ford.ev:PreferredChargeTimesListener"
+        property "sonar.projectVersion", "1.0"
+        property "sonar.analysis.mode", "publish"
+        property 'sonar.exclusions', "**/config/*.java,**/swagger/*.java,**/aop/*.java,**/models/*.java," +
+                "**/PreferredChargeTimesListenerApplication.java,**/enums/*.java,**/constants/*.java, **/utility/*.java"
+    }
+}
+
+dependencies {
+
+    // spring dependencies
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.cloud:spring-cloud-starter-sleuth'
+    implementation "org.springframework.retry:spring-retry"
+
+    // spring cloud connectors
+    implementation 'io.pivotal.spring.cloud:spring-cloud-services-starter-config-client'
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+
+    // database
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    // security
+    implementation "org.springframework.cloud:spring-cloud-starter-oauth2"
+    implementation "org.springframework.security.oauth.boot:spring-security-oauth2-autoconfigure"
+    
+    // Kafka dependencies
+    implementation "org.springframework.cloud:spring-cloud-stream"
+    implementation "org.springframework.cloud:spring-cloud-stream-binder-kafka"
+    implementation 'org.jetbrains:annotations:20.1.0'
+
+    //geocode
+    implementation "com.ford.ev.smartcharging:smartcharging-geocoder-sdk:$geocoderSdkVersion"
+
+    // externals
+    implementation "org.springdoc:springdoc-openapi-ui:$springDocVersion"
+    implementation "org.springdoc:springdoc-openapi-webmvc-core:$springDocVersion"
+    implementation "net.logstash.logback:logstash-logback-encoder:$logstashVersion"
+    implementation "ch.qos.logback:logback-classic:$logbackVersion"
+//    implementation "org.apache.lucene:lucene-spatial:5.5.2"  // only has encode no decode
+    implementation group: 'ch.hsr', name: 'geohash', version: '1.4.0'
+    implementation "org.mapstruct:mapstruct:${mapStructVersion}"
+    annotationProcessor "org.mapstruct:mapstruct-processor:${mapStructVersion}"
+    testAnnotationProcessor "org.mapstruct:mapstruct-processor:${mapStructVersion}"
+
+    implementation "org.springframework.boot:spring-boot-starter-cache"
+
+    // testing
+//    testImplementation "org.springframework.boot:spring-boot-starter-test"
+    testImplementation "org.springframework.cloud:spring-cloud-stream-test-support"
+//    testImplementation "org.junit.jupiter:junit-jupiter-engine:5.7.0"
+//    testImplementation "org.junit.jupiter:junit-jupiter-api:5.7.0"
+//    testImplementation "org.mockito:mockito-core:3.12.4"
+//    testImplementation "org.mockito:mockito-junit-jupiter:3.12.4"
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testImplementation('org.springframework.boot:spring-boot-starter-test') {
+        exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+    }
+    testImplementation 'org.mockito:mockito-inline'
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "io.pivotal.spring.cloud:spring-cloud-services-dependencies:${springCloudServicesVersion}"
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+	}
+}
+
+test {
+	useJUnitPlatform()
+}
